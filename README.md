@@ -2,61 +2,53 @@
 
 Интерактивный desktop-first гид по фотолокациям Москвы.
 
-## MVP
+## Сейчас реализовано
 
-- полноэкранная карта Москвы;
-- MapLibre GL JS + OpenStreetMap raster tiles;
-- тёмная минималистичная картографическая тема;
-- собственные Nothing-style markers вместо стандартных pin;
+- тёмная минималистичная карта Москвы на MapLibre GL JS;
+- OpenStreetMap tiles без обязательного API-ключа;
+- Nothing-style маркеры и плавный fly-to;
+- первая точка: Moscow City · Viewpoint 01 — 55.747975, 37.540821;
 - поиск и фильтры;
-- detail panel с галереей;
-- fullscreen photo viewer;
-- metadata / notes / tags;
-- сохранение локаций в localStorage;
-- первая точка: **Moscow City · Viewpoint 01** — `55.747975, 37.540821`;
-- GitHub Pages workflow.
+- правая карточка локации;
+- галерея из трёх кадров и fullscreen lightbox;
+- сохранение локации в localStorage;
+- Open in Maps;
+- graceful fallback, если фото ещё не загружены;
+- desktop responsive layout и анимации переходов.
 
-## Фотографии первой точки
+## Фото первой локации
 
-Интерфейс уже ожидает файлы:
+Положи исходные изображения в папку `assets/` с именами:
 
-```
-assets/moscow-city-01.jpg
-assets/moscow-city-02.jpg
-assets/moscow-city-03.jpg
-```
+- `moscow-city-01.jpg`
+- `moscow-city-02.jpg`
+- `moscow-city-03.jpg`
 
-Если файлов нет, приложение использует стилизованный fallback и не ломает интерфейс.
+Приложение уже ссылается на эти пути в `data/locations.js`.
 
-EXIF в исходных трёх фотографиях отсутствует, поэтому camera / lens / date пока показаны как Unknown / EXIF unavailable.
+## GitHub Pages
 
-## Новые локации
+Репозиторий настроен на обычный GitHub Pages deploy из ветки `main`.
+Отдельный Actions workflow не нужен — GitHub сам пересобирает Pages после каждого push.
 
-Все данные находятся в `data/locations.js`. Добавление точки не требует менять map logic:
+Адрес:
+
+`https://mburzhinsky-hub.github.io/vision_photo/`
+
+## Структура
+
+- `index.html` — интерфейс;
+- `styles.css` — дизайн и адаптация;
+- `app.js` — карта, маркеры, фильтры, галерея и интерактивность;
+- `data/locations.js` — данные фототочек;
+- `assets/` — фотографии локаций.
+
+## Добавление новой точки
+
+Добавь объект в `data/locations.js` с координатами в формате:
 
 ```js
-{
-  id: "unique-id",
-  title: "Location name",
-  coordinates: [longitude, latitude],
-  categories: ["Architecture"],
-  tags: ["Architecture", "Minimal"],
-  images: ["./assets/photo-1.jpg"]
-}
+coordinates: [longitude, latitude]
 ```
 
-## Local preview
-
-Из корня репозитория:
-
-```bash
-python -m http.server 8080
-```
-
-Открыть `http://localhost:8080`.
-
-## Map
-
-Map rendering: MapLibre GL JS.  
-Basemap data / tiles: OpenStreetMap.  
-Attribution is shown directly in the UI.
+и положи изображения в `assets/`.
