@@ -203,6 +203,10 @@ function renderLocation(location, {fly = true} = {}) {
         duration: 1050,
         essential: true
       });
+
+      if (window.matchMedia("(max-width: 820px)").matches) {
+        setTimeout(() => detailPanel?.scrollIntoView({behavior:"smooth", block:"start"}), 720);
+      }
     }
   }, 150);
 }
@@ -274,6 +278,7 @@ filters.addEventListener("click", event => {
   activeFilter = button.dataset.filter;
   [...filters.querySelectorAll(".filter")].forEach(node => node.classList.toggle("active", node === button));
   syncMarkers();
+  if (window.matchMedia("(max-width: 820px)").matches) closeMobileTools();
 });
 
 searchForm.addEventListener("submit", event => {
@@ -282,6 +287,7 @@ searchForm.addEventListener("submit", event => {
   const visible = visibleLocations();
   if (!visible.length) showToast("Nothing found");
   else if (visible[0]) renderLocation(visible[0]);
+  if (window.matchMedia("(max-width: 820px)").matches) closeMobileTools();
 });
 
 searchInput.addEventListener("input", syncMarkers);
@@ -345,3 +351,77 @@ document.querySelectorAll("[data-nav]").forEach(button => {
 
 window.addEventListener("resize", () => map.resize());
 syncMarkers();
+
+
+// === MOBILE ADAPTATION v1 ===
+const menuButton = document.getElementById("menuButton");
+const detailPanel = document.getElementById("detailPanel");
+const mobileMedia = window.matchMedia("(max-width: 820px)");
+
+function isMobileLayout() {
+  return mobileMedia.matches;
+}
+
+function closeMobileTools() {
+  app.classList.remove("mobile-tools-open");
+}
+
+menuButton.addEventListener("click", event => {
+  if (!isMobileLayout()) return;
+  event.stopPropagation();
+  app.classList.toggle("mobile-tools-open");
+  if (app.classList.contains("mobile-tools-open")) {
+    setTimeout(() => searchInput.focus({preventScroll:true}), 120);
+  }
+});
+
+document.addEventListener("click", event => {
+  if (!isMobileLayout() || !app.classList.contains("mobile-tools-open")) return;
+  if (event.target.closest(".search, .filters, #menuButton")) return;
+  closeMobileTools();
+});
+
+mobileMedia.addEventListener?.("change", () => {
+  closeMobileTools();
+  setTimeout(() => map.resize(), 80);
+});
+
+function attachHorizontalSwipe(node, callback) {
+  let startX = 0;
+  let startY = 0;
+
+  node.addEventListener("touchstart", event => {
+    if (event.touches.length !== 1) return;
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+  }, {passive:true});
+
+  node.addEventListener("touchend", event => {
+    if (!startX || !event.changedTouches.length) return;
+    const dx = event.changedTouches[0].clientX - startX;
+    const dy = event.changedTouches[0].clientY - startY;
+    startX = 0;
+    startY = 0;
+
+    if (Math.abs(dx) < 46 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    callback(dx < 0 ? 1 : -1);
+  }, {passive:true});
+}
+
+attachHorizontalSwipe(heroPhoto, direction => {
+  if (isMobileLayout() && selectedLocation?.images?.length > 1) {
+    renderPhoto(selectedPhoto + direction);
+  }
+});
+
+attachHorizontalSwipe(lightboxPhoto, direction => {
+  if (selectedLocation?.images?.length > 1) {
+    renderPhoto(selectedPhoto + direction);
+  }
+});
+
+if ("visualViewport" in window) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (isMobileLayout()) requestAnimationFrame(() => map.resize());
+  });
+}
