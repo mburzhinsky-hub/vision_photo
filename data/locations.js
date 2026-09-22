@@ -13,9 +13,9 @@ window.VISION_LOCATIONS = [
     lens: "Unknown",
     notes: "Best for architecture, strong verticals and minimal frames. The location works especially well from a low angle with a wide field of view.",
     images: [
-      "./assets/moscow-city-01.jpg?v=9",
-      "./assets/moscow-city-02.jpg?v=9",
-      "./assets/moscow-city-03.jpg?v=9"
+      "./assets/moscow-city-01.jpg?v=10",
+      "./assets/moscow-city-02.jpg?v=10",
+      "./assets/moscow-city-03.jpg?v=10"
     ]
   }
 ];
