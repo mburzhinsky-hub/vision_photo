@@ -32,9 +32,9 @@ window.VISION_LOCATIONS = [
     lens: "Unknown",
     notes: "A strong location for architectural geometry, symmetry and transport-themed frames around the station entrance and concourse.",
     images: [
-      "./assets/leningradsky-station-01.jpg?v=1",
-      "./assets/leningradsky-station-02.jpg?v=1",
-      "./assets/leningradsky-station-03.jpg?v=1"
+      "./assets/leningradsky-station-01.jpg?v=2",
+      "./assets/leningradsky-station-02.jpg?v=2",
+      "./assets/leningradsky-station-03.jpg?v=2"
     ]
   }
 ];
