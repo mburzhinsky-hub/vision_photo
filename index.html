@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080a0c" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Vision Photo — интерактивный гид по фотолокациям Москвы." />
+  <title>Vision Photo — Moscow Photo Locations</title>
+
+  <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="app-shell" id="app">
+    <header class="topbar">
+      <div class="brand-group">
+        <button class="glyph-menu" id="menuButton" type="button" aria-label="Меню">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </button>
+
+        <a class="brand" href="./" aria-label="Vision Photo">
+          <span>VISION PHOTO</span>
+          <small>LOCATIONS FOR A HIGHER PERSPECTIVE</small>
+        </a>
+      </div>
+
+      <form class="search" id="searchForm" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Search locations, districts, or moods…" />
+        <kbd>⌘ K</kbd>
+      </form>
+
+      <div class="filters" id="filters" aria-label="Фильтры">
+        <button class="filter active" data-filter="All" type="button">All</button>
+        <button class="filter" data-filter="Architecture" type="button">Architecture</button>
+        <button class="filter" data-filter="Street" type="button">Street</button>
+        <button class="filter" data-filter="Night" type="button">Night</button>
+        <button class="filter" data-filter="Minimal" type="button">Minimal</button>
+      </div>
+
+      <div class="topbar-meta">
+        <button class="city-switch" type="button">Moscow <span>⌄</span></button>
+        <span class="location-count"><i></i><b id="locationCount">1</b> location</span>
+        <button class="profile" type="button" aria-label="Профиль">MB</button>
+      </div>
+    </header>
+
+    <aside class="rail" aria-label="Навигация">
+      <button class="rail-button active" type="button" data-nav="map" aria-label="Map">
+        <svg viewBox="0 0 24 24"><path d="m3 6 5-2 8 3 5-2v13l-5 2-8-3-5 2V6Zm5-2v13m8-10v13"/></svg>
+        <span>Map</span>
+      </button>
+      <button class="rail-button" type="button" data-nav="explore" aria-label="Explore">
+        <svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 4-4 2 2-4 4-2Z"/></svg>
+        <span>Explore</span>
+      </button>
+      <button class="rail-button" type="button" id="savedNav" aria-label="Saved">
+        <svg viewBox="0 0 24 24"><path d="M20.8 8.3c0 5.1-8.8 10.4-8.8 10.4S3.2 13.4 3.2 8.3A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.8 1.3Z"/></svg>
+        <span>Saved</span>
+      </button>
+      <button class="rail-button" type="button" data-nav="collections" aria-label="Collections">
+        <svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 5 8 4 8-4M4 17l8 4 8-4"/></svg>
+        <span>Collections</span>
+      </button>
+
+      <div class="rail-spacer"></div>
+      <button class="rail-button compact" id="helpButton" type="button" aria-label="Help">
+        <span class="help-symbol">?</span>
+      </button>
+    </aside>
+
+    <section class="map-stage" aria-label="Карта фотолокаций Москвы">
+      <div id="map" class="map"></div>
+
+      <div class="map-copy">
+        <p class="map-kicker">MOSCOW</p>
+        <h1>Photographic<br />locations</h1>
+        <p>Curated viewpoints for architecture,<br />street and city photography.</p>
+      </div>
+
+      <div class="map-controls" aria-label="Управление картой">
+        <button id="northButton" type="button" title="Север">N</button>
+        <div class="zoom-stack">
+          <button id="zoomIn" type="button" aria-label="Приблизить">+</button>
+          <button id="zoomOut" type="button" aria-label="Отдалить">−</button>
+        </div>
+        <button id="resetMap" type="button" aria-label="Вернуть карту к Москве">
+          <svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+        </button>
+      </div>
+
+      <div class="map-hint" id="mapHint">
+        <span class="hint-dot"></span>
+        <div><strong>Moscow City</strong><small>Viewpoint 01</small></div>
+        <span>→</span>
+      </div>
+
+      <div class="map-credit">© OpenStreetMap contributors</div>
+    </section>
+
+    <aside class="detail-panel open" id="detailPanel" aria-live="polite">
+      <div class="panel-inner" id="panelInner">
+        <section class="hero-card">
+          <div class="hero-photo media-frame" id="heroPhoto" data-photo="0">
+            <div class="photo-fallback">
+              <span>MOSCOW CITY</span>
+              <small>Add original photo to /assets</small>
+            </div>
+          </div>
+
+          <div class="hero-topline">
+            <span id="photoCounter">1 / 3</span>
+            <button id="fullscreenPhoto" type="button" aria-label="Открыть фотографию">
+              <svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m18 0v5h-5"/></svg>
+            </button>
+          </div>
+
+          <div class="hero-overlay">
+            <p id="locationSubtitle">MOSCOW CITY</p>
+            <h2 id="locationTitle">Moscow City · Viewpoint 01</h2>
+            <div class="coordinate-line"><span id="coords">55.747975, 37.540821</span>
+              <button id="favoriteButton" type="button" aria-label="Сохранить локацию">
+                <svg viewBox="0 0 24 24"><path d="M20.8 8.3c0 5.1-8.8 10.4-8.8 10.4S3.2 13.4 3.2 8.3A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.8 1.3Z"/></svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div class="thumbs" id="thumbs"></div>
+
+        <section class="facts" aria-label="Данные о съёмке">
+          <div class="fact">
+            <svg viewBox="0 0 24 24"><path d="M5 7h3l1-2h6l1 2h3a2 2 0 0 1 2 2v9H3V9a2 2 0 0 1 2-2Zm7 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
+            <div><small>Shot on</small><strong id="shotOn">Unknown</strong></div>
+          </div>
+          <div class="fact">
+            <svg viewBox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg>
+            <div><small>When</small><strong id="shotWhen">EXIF unavailable</strong></div>
+          </div>
+          <div class="fact">
+            <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>
+            <div><small>Lens</small><strong id="lens">Unknown</strong></div>
+          </div>
+        </section>
+
+        <section class="meta-section">
+          <div class="meta-row">
+            <svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+            <div>
+              <small>Location</small>
+              <strong id="district">Moscow City, Presnensky District</strong>
+              <span id="coordsSmall">55.747975, 37.540821</span>
+            </div>
+            <button id="openMaps" type="button">↗ <span>Open in Maps</span></button>
+          </div>
+
+          <div class="meta-row notes">
+            <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6V3Zm8 0v4h4M9 12h6m-6 4h6"/></svg>
+            <div>
+              <small>Notes</small>
+              <p id="notes">Architecture, verticals and clean geometric frames. Strongest from a low angle.</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="tags" id="tags"></div>
+      </div>
+    </aside>
+
+    <dialog class="lightbox" id="lightbox">
+      <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрыть">×</button>
+      <button class="lightbox-nav prev" id="lightboxPrev" type="button" aria-label="Предыдущее фото">←</button>
+      <div class="lightbox-photo media-frame" id="lightboxPhoto"></div>
+      <button class="lightbox-nav next" id="lightboxNext" type="button" aria-label="Следующее фото">→</button>
+      <div class="lightbox-caption">
+        <strong id="lightboxTitle">Moscow City · Viewpoint 01</strong>
+        <span id="lightboxCount">1 / 3</span>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script src="./data/locations.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
