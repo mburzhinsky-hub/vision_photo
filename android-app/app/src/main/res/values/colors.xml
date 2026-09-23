@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="vision_black">#07090B</color>
+    <color name="vision_red">#FF4B42</color>
+    <color name="vision_white">#F1F3F2</color>
+</resources>
