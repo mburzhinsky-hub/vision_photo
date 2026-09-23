@@ -427,7 +427,7 @@ if ("visualViewport" in window) {
 }
 
 
-// === GEOLOCATION CONTROL v1 ===
+// === GEOLOCATION CONTROL v2 ===
 const locateMeButton = document.getElementById("locateMe");
 let userLocationMarker = null;
 
@@ -454,28 +454,50 @@ function placeUserLocation(lng, lat) {
   }
 }
 
-locateMeButton?.addEventListener("click", () => {
+function applyLocatedPosition(longitude, latitude) {
+  placeUserLocation(longitude, latitude);
+
+  map.flyTo({
+    center: [longitude, latitude],
+    zoom: Math.max(map.getZoom(), 15.2),
+    duration: 1000,
+    essential: true
+  });
+
+  setLocateState("located");
+  showToast("Your location");
+}
+
+window.__visionNativeLocation = payload => {
+  if (!payload || payload.ok !== true) {
+    setLocateState("idle");
+    showToast(payload?.message || "Could not determine location");
+    return;
+  }
+
+  const latitude = Number(payload.latitude);
+  const longitude = Number(payload.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    setLocateState("idle");
+    showToast("Invalid location data");
+    return;
+  }
+
+  applyLocatedPosition(longitude, latitude);
+};
+
+function requestBrowserLocation() {
   if (!("geolocation" in navigator)) {
+    setLocateState("idle");
     showToast("Geolocation is not supported");
     return;
   }
 
-  setLocateState("locating");
-
   navigator.geolocation.getCurrentPosition(
     position => {
       const {longitude, latitude} = position.coords;
-      placeUserLocation(longitude, latitude);
-
-      map.flyTo({
-        center: [longitude, latitude],
-        zoom: Math.max(map.getZoom(), 15.2),
-        duration: 1000,
-        essential: true
-      });
-
-      setLocateState("located");
-      showToast("Your location");
+      applyLocatedPosition(longitude, latitude);
     },
     error => {
       setLocateState("idle");
@@ -490,8 +512,21 @@ locateMeButton?.addEventListener("click", () => {
     },
     {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 15000
+      timeout: 15000,
+      maximumAge: 30000
     }
   );
+}
+
+locateMeButton?.addEventListener("click", () => {
+  setLocateState("locating");
+
+  try {
+    if (window.VisionNative && typeof window.VisionNative.requestLocation === "function") {
+      window.VisionNative.requestLocation();
+      return;
+    }
+  } catch (_) {}
+
+  requestBrowserLocation();
 });
