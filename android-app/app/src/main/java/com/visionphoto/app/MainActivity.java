@@ -6,10 +6,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -20,32 +21,39 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.net.Uri;
 import android.widget.Toast;
+
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationTokenSource;
 
 import org.json.JSONObject;
 
 import java.util.List;
-import java.util.concurrent.Executor;
 
 public class MainActivity extends Activity {
     private static final int REQ_LOCATION = 1001;
     private static final int REQ_NOTIFICATIONS = 1002;
-    private static final String APP_URL = "https://mburzhinsky-hub.github.io/vision_photo/";
+    private static final String APP_URL = "https://mburzhinsky-hub.github.io/vision_photo/?android=104";
     private static final String APP_HOST = "mburzhinsky-hub.github.io";
 
     private WebView webView;
     private LocationManager locationManager;
+    private FusedLocationProviderClient fusedClient;
+    private CancellationTokenSource fusedCancellation;
     private boolean pendingNativeLocationRequest = false;
-    private CancellationSignal locationCancellation;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable locationTimeout;
+    private LocationListener oneShotListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        fusedClient = LocationServices.getFusedLocationProviderClient(this);
 
         webView = new WebView(this);
         setContentView(webView);
@@ -58,9 +66,10 @@ public class MainActivity extends Activity {
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
+        webView.clearCache(true);
         webView.addJavascriptInterface(new NativeBridge(), "VisionNative");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -106,8 +115,15 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public boolean isAndroidApp() {
-            return true;
+        public String getLocationStatus() {
+            boolean permission = hasLocationPermission();
+            boolean enabled = isLocationEnabled();
+            int play = GoogleApiAvailability.getInstance()
+                    .isGooglePlayServicesAvailable(MainActivity.this);
+
+            return "{\"permission\":" + permission
+                    + ",\"enabled\":" + enabled
+                    + ",\"playServices\":" + play + "}";
         }
     }
 
@@ -127,14 +143,15 @@ public class MainActivity extends Activity {
     }
 
     private boolean isLocationEnabled() {
+        if (locationManager == null) return false;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            return locationManager != null && locationManager.isLocationEnabled();
+            return locationManager.isLocationEnabled();
         }
 
         try {
-            return locationManager != null
-                    && (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                    || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+            return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                    || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         } catch (Exception ignored) {
             return false;
         }
@@ -177,89 +194,112 @@ public class MainActivity extends Activity {
 
         if (!isLocationEnabled()) {
             pendingNativeLocationRequest = false;
-            sendLocationError("Location services are turned off");
-            Toast.makeText(
-                    this,
-                    "Turn on Location in Android settings and try again.",
-                    Toast.LENGTH_LONG
-            ).show();
+            sendLocationError("Turn on Android Location and try again");
             try {
                 startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
             } catch (Exception ignored) {}
             return;
         }
 
-        Location freshCached = getBestRecentLocation();
-        if (freshCached != null) {
+        Location cached = getBestLocation(false);
+        if (cached != null && isRecentEnough(cached, 120_000L)) {
             pendingNativeLocationRequest = false;
-            sendLocationToWeb(freshCached);
+            sendLocationToWeb(cached, "cache");
             return;
         }
+
+        requestFusedLocation();
+    }
+
+    private void requestFusedLocation() {
+        cancelLocationRequest();
+
+        fusedCancellation = new CancellationTokenSource();
+
+        try {
+            fusedClient.getCurrentLocation(
+                    Priority.PRIORITY_HIGH_ACCURACY,
+                    fusedCancellation.getToken()
+            )
+            .addOnSuccessListener(this, location -> {
+                if (!pendingNativeLocationRequest) return;
+
+                if (location != null) {
+                    finishWithLocation(location, "fused");
+                } else {
+                    requestLocationManagerFallback();
+                }
+            })
+            .addOnFailureListener(this, error -> {
+                if (pendingNativeLocationRequest) {
+                    requestLocationManagerFallback();
+                }
+            });
+        } catch (SecurityException error) {
+            pendingNativeLocationRequest = false;
+            sendLocationError("Location permission is required");
+            return;
+        } catch (Exception error) {
+            requestLocationManagerFallback();
+        }
+
+        locationTimeout = () -> {
+            if (!pendingNativeLocationRequest) return;
+            requestLocationManagerFallback();
+        };
+        handler.postDelayed(locationTimeout, 12_000L);
+    }
+
+    private void requestLocationManagerFallback() {
+        cancelTimeoutOnly();
+
+        if (!pendingNativeLocationRequest || locationManager == null) return;
 
         String provider = chooseProvider();
         if (provider == null) {
+            Location cached = getBestLocation(true);
             pendingNativeLocationRequest = false;
-            sendLocationError("No location provider is available");
+            if (cached != null) {
+                sendLocationToWeb(cached, "last-known");
+            } else {
+                sendLocationError("No location provider is available");
+            }
             return;
         }
 
-        cancelLocationRequest();
+        oneShotListener = location -> {
+            if (!pendingNativeLocationRequest) return;
+            finishWithLocation(location, "android-" + location.getProvider());
+        };
 
-        if (Build.VERSION.SDK_INT >= 30) {
-            locationCancellation = new CancellationSignal();
-            Executor executor = getMainExecutor();
-
-            try {
-                locationManager.getCurrentLocation(
-                        provider,
-                        locationCancellation,
-                        executor,
-                        location -> {
-                            cancelLocationTimeout();
-                            pendingNativeLocationRequest = false;
-
-                            if (location != null) {
-                                sendLocationToWeb(location);
-                            } else {
-                                Location cached = getBestRecentLocation();
-                                if (cached != null) {
-                                    sendLocationToWeb(cached);
-                                } else {
-                                    sendLocationError("Could not get a location fix");
-                                }
-                            }
-                        }
-                );
-            } catch (SecurityException error) {
-                pendingNativeLocationRequest = false;
-                sendLocationError("Location permission is required");
-                return;
-            }
-
-            locationTimeout = () -> {
-                if (!pendingNativeLocationRequest) return;
-                if (locationCancellation != null) {
-                    locationCancellation.cancel();
-                }
-                pendingNativeLocationRequest = false;
-
-                Location cached = getBestRecentLocation();
-                if (cached != null) {
-                    sendLocationToWeb(cached);
-                } else {
-                    sendLocationError("Location request timed out");
-                }
-            };
-            handler.postDelayed(locationTimeout, 15000L);
-        } else {
-            Location cached = getBestRecentLocation();
+        try {
+            locationManager.requestLocationUpdates(
+                    provider,
+                    0L,
+                    0f,
+                    oneShotListener,
+                    Looper.getMainLooper()
+            );
+        } catch (SecurityException error) {
             pendingNativeLocationRequest = false;
-            if (cached != null) {
-                sendLocationToWeb(cached);
-            } else {
-                sendLocationError("Could not determine location");
-            }
+            sendLocationError("Location permission is required");
+            return;
         }
+
+        locationTimeout = () -> {
+            if (!pendingNativeLocationRequest) return;
+
+            Location cached = getBestLocation(true);
+            pendingNativeLocationRequest = false;
+            removeOneShotListener();
+
+            if (cached != null) {
+                sendLocationToWeb(cached, "last-known");
+            } else {
+                sendLocationError("No location fix. Move near a window and try again.");
+            }
+        };
+        handler.postDelayed(locationTimeout, 18_000L);
     }
 
     private String chooseProvider() {
@@ -268,16 +308,12 @@ public class MainActivity extends Activity {
         try {
             List<String> enabled = locationManager.getProviders(true);
 
-            if (enabled.contains("fused")) {
-                return "fused";
+            if (enabled.contains(LocationManager.GPS_PROVIDER)) {
+                return LocationManager.GPS_PROVIDER;
             }
 
             if (enabled.contains(LocationManager.NETWORK_PROVIDER)) {
                 return LocationManager.NETWORK_PROVIDER;
-            }
-
-            if (enabled.contains(LocationManager.GPS_PROVIDER)) {
-                return LocationManager.GPS_PROVIDER;
             }
 
             Criteria criteria = new Criteria();
@@ -288,7 +324,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private Location getBestRecentLocation() {
+    private Location getBestLocation(boolean allowOld) {
         if (!hasLocationPermission() || locationManager == null) return null;
 
         Location best = null;
@@ -297,6 +333,10 @@ public class MainActivity extends Activity {
             for (String provider : locationManager.getProviders(true)) {
                 Location candidate = locationManager.getLastKnownLocation(provider);
                 if (candidate == null) continue;
+
+                if (!allowOld && !isRecentEnough(candidate, 10 * 60_000L)) {
+                    continue;
+                }
 
                 if (best == null
                         || candidate.getTime() > best.getTime()
@@ -307,24 +347,27 @@ public class MainActivity extends Activity {
             }
         } catch (SecurityException ignored) {}
 
-        if (best == null) return null;
-
-        long ageMs = Math.abs(System.currentTimeMillis() - best.getTime());
-        if (ageMs <= 5 * 60_000L) {
-            return best;
-        }
-
-        return null;
+        return best;
     }
 
-    private void sendLocationToWeb(Location location) {
+    private boolean isRecentEnough(Location location, long maxAgeMs) {
+        return Math.abs(System.currentTimeMillis() - location.getTime()) <= maxAgeMs;
+    }
+
+    private void finishWithLocation(Location location, String source) {
+        cancelLocationRequest();
+        pendingNativeLocationRequest = false;
+        sendLocationToWeb(location, source);
+    }
+
+    private void sendLocationToWeb(Location location, String source) {
         JSONObject payload = new JSONObject();
         try {
             payload.put("ok", true);
             payload.put("latitude", location.getLatitude());
             payload.put("longitude", location.getLongitude());
             payload.put("accuracy", location.hasAccuracy() ? location.getAccuracy() : JSONObject.NULL);
-            payload.put("provider", location.getProvider());
+            payload.put("provider", source);
         } catch (Exception ignored) {}
 
         evaluateLocationCallback(payload);
@@ -350,21 +393,31 @@ public class MainActivity extends Activity {
         webView.post(() -> webView.evaluateJavascript(script, null));
     }
 
-    private void cancelLocationTimeout() {
+    private void cancelTimeoutOnly() {
         if (locationTimeout != null) {
             handler.removeCallbacks(locationTimeout);
             locationTimeout = null;
         }
     }
 
-    private void cancelLocationRequest() {
-        cancelLocationTimeout();
-
-        if (locationCancellation != null) {
+    private void removeOneShotListener() {
+        if (oneShotListener != null && locationManager != null) {
             try {
-                locationCancellation.cancel();
+                locationManager.removeUpdates(oneShotListener);
             } catch (Exception ignored) {}
-            locationCancellation = null;
+            oneShotListener = null;
+        }
+    }
+
+    private void cancelLocationRequest() {
+        cancelTimeoutOnly();
+        removeOneShotListener();
+
+        if (fusedCancellation != null) {
+            try {
+                fusedCancellation.cancel();
+            } catch (Exception ignored) {}
+            fusedCancellation = null;
         }
     }
 
