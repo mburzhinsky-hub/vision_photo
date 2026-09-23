@@ -10,7 +10,7 @@
 
   <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.10.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./styles.css?v=8" />
+  <link rel="stylesheet" href="./styles.css?v=9" />
 </head>
 <body>
   <main class="app-shell" id="app">
@@ -90,6 +90,9 @@
         </div>
         <button id="resetMap" type="button" aria-label="Вернуть карту к Москве">
           <svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+        </button>
+        <button id="locateMe" class="locate-button" type="button" aria-label="Показать мою геопозицию" title="Моя геопозиция">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/><circle cx="12" cy="12" r="1.7"/></svg>
         </button>
       </div>
 
@@ -186,6 +189,6 @@
   </main>
 
   <script src="./data/locations.js?v=7"></script>
-  <script type="module" src="./app.js?v=7"></script>
+  <script type="module" src="./app.js?v=9"></script>
 </body>
 </html>
