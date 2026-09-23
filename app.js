@@ -425,3 +425,73 @@ if ("visualViewport" in window) {
     if (isMobileLayout()) requestAnimationFrame(() => map.resize());
   });
 }
+
+
+// === GEOLOCATION CONTROL v1 ===
+const locateMeButton = document.getElementById("locateMe");
+let userLocationMarker = null;
+
+function setLocateState(state) {
+  locateMeButton?.classList.toggle("locating", state === "locating");
+  locateMeButton?.classList.toggle("located", state === "located");
+  locateMeButton?.setAttribute("aria-busy", state === "locating" ? "true" : "false");
+}
+
+function placeUserLocation(lng, lat) {
+  if (!userLocationMarker) {
+    const element = document.createElement("div");
+    element.className = "user-location-marker";
+    element.setAttribute("aria-hidden", "true");
+
+    userLocationMarker = new maplibregl.Marker({
+      element,
+      anchor: "center"
+    })
+      .setLngLat([lng, lat])
+      .addTo(map);
+  } else {
+    userLocationMarker.setLngLat([lng, lat]);
+  }
+}
+
+locateMeButton?.addEventListener("click", () => {
+  if (!("geolocation" in navigator)) {
+    showToast("Geolocation is not supported");
+    return;
+  }
+
+  setLocateState("locating");
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const {longitude, latitude} = position.coords;
+      placeUserLocation(longitude, latitude);
+
+      map.flyTo({
+        center: [longitude, latitude],
+        zoom: Math.max(map.getZoom(), 15.2),
+        duration: 1000,
+        essential: true
+      });
+
+      setLocateState("located");
+      showToast("Your location");
+    },
+    error => {
+      setLocateState("idle");
+
+      if (error.code === error.PERMISSION_DENIED) {
+        showToast("Location access denied");
+      } else if (error.code === error.TIMEOUT) {
+        showToast("Location request timed out");
+      } else {
+        showToast("Could not determine location");
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 15000
+    }
+  );
+});
