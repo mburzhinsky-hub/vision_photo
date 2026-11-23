@@ -27,10 +27,44 @@
 @media(max-width:370px){.negative-body{height:clamp(186px,33dvh,300px)}.hero-copy h1{font-size:43px}.wordmark{font-size:20px}.active-stock-actions>button:first-child{display:none}.stock-heading h2{font-size:30px}.stock-caption p{max-width:195px}.contact-grid{gap:7px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}
 
+
+/* PHOTO FIRST / BURZH LAB — photograph is the hero, not decorative UI */
+.photo-focus-trigger{display:flex;align-items:center;gap:7px;color:#d8ded5;padding:7px 8px;margin-right:-4px;min-height:30px;font:10px var(--mono);letter-spacing:.025em;border:1px solid rgba(230,234,225,.16);border-radius:5px;z-index:3;position:relative}.photo-focus-trigger svg{height:16px;width:16px}.photo-focus-trigger:hover{color:white;border-color:#a0afa7}
+@media(max-width:570px){
+  .masthead{height:58px}
+  .layout{padding:7px 8px calc(115px + env(safe-area-inset-bottom))}
+  .hero-title{display:none}
+  .negative{padding:0 5px;border-radius:8px;box-shadow:0 7px 22px rgba(18,22,18,.10)}
+  .negative-top{height:30px;font-size:9px;padding:0 5px}
+  .negative-bottom{height:31px;font-size:8px;padding:0 3px}
+  .negative-body{width:100%;height:auto!important;aspect-ratio:var(--frame-aspect, 0.714);min-height: min(250px, 42dvh);max-height: min(68dvh, 670px);gap:0;align-items:stretch}
+  .negative-body .perfs{display:none}
+  .image-housing{height:100%;width:100%;min-width:0;box-shadow:none;background:#141514}
+  .image-housing canvas{width:100%;height:100%;object-fit:contain}
+  .image-grab-label{right:7px;bottom:7px;padding:6px 7px;font-size:8px;letter-spacing:0}
+  .photo-focus-trigger{font-size:8px;padding:4px 6px;min-height:24px;gap:5px}
+  .photo-focus-trigger svg{height:13px;width:13px}
+  .stock-shelf{padding-top:8px}
+  .shelf-head{margin-bottom:6px}
+  .film-rail{padding-top:2px}
+  .negative-bottom #imageDetails{max-width:107px}
+}
+/* Expanded viewing: preserves the exact source crop and touch compare */
+body.photo-focus-open{overflow:hidden!important}
+.negative.photo-focus{position:fixed;z-index:200;top:0;right:0;bottom:0;left:0;border-radius:0;max-width:none;margin:0;padding:0 10px calc(env(safe-area-inset-bottom) + 4px);display:flex;flex-direction:column;background:#141615;box-shadow:none}
+.negative.photo-focus .negative-top{height:calc(56px + env(safe-area-inset-top));flex-shrink:0;padding-top:env(safe-area-inset-top);font-size:10px}
+.negative.photo-focus .negative-body{flex:1 1 auto;min-height:0;max-height:none;width:100%;height:auto!important;aspect-ratio:auto;gap:0;overflow:hidden}
+.negative.photo-focus .perfs{display:none}
+.negative.photo-focus .image-housing{width:100%;height:100%;max-width:none}
+.negative.photo-focus .negative-bottom{height:calc(40px + env(safe-area-inset-bottom));flex-shrink:0;display:flex}
+.negative.photo-focus .photo-focus-trigger{min-width:116px;justify-content:center}
+@media(prefers-reduced-motion:no-preference){.photo-focus-trigger{transition:background .18s,color .18s,border-color .18s}}
+
 </style>
 </head>
 <body>
 <svg aria-hidden="true" class="sprite" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
 <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
@@ -62,7 +96,7 @@
    <div class="hero-copy"><h1>Свет <em>остаётся.</em></h1><div class="hero-sidecopy">Не имитация прошлого.<br>Новый способ чувствовать кадр.</div></div>
   </section>
   <section class="negative" aria-label="Просмотр фотографии">
-   <div class="negative-top"><div><span class="led"></span> NEGATIVE / <span id="negativeIndex">001</span></div><span>LIGHT IS THE SUBJECT <span class="top-cross">✳</span></span></div>
+   <div class="negative-top"><div><span class="led"></span> NEGATIVE / <span id="negativeIndex">001</span></div><button class="photo-focus-trigger" id="focusPhoto" type="button" aria-label="Развернуть фотографию" aria-pressed="false"><svg><use href="#i-expand"/></svg><span id="focusPhotoLabel">РАЗВЕРНУТЬ КАДР</span></button></div>
    <div class="negative-body">
     <div class="perfs left" aria-hidden="true"></div>
     <div class="image-housing" id="imageHousing" role="button" aria-label="Удерживайте палец, чтобы увидеть оригинал" tabindex="0">
@@ -216,7 +250,7 @@ function getSettings(p=current()){const blended={};const a=state.strength/100;fo
 }
 function queueRender(){if(drawQueued||!state.preview)return;drawQueued=true;requestAnimationFrame(()=>{drawQueued=false;renderImage()})}
 function renderImage(){if(!state.preview)return;const source=state.preview;const im=new ImageData(new Uint8ClampedArray(source.data),source.width,source.height);grade(im,im.width,im.height,getSettings());$('afterImage').getContext('2d',{willReadFrequently:true}).putImageData(im,0,0)}
-function drawPhotoBase(bitmap){const iw=bitmap.width||bitmap.naturalWidth,ih=bitmap.height||bitmap.naturalHeight;const sc=Math.min(1,1120/Math.max(iw,ih));const w=Math.max(1,Math.round(iw*sc)),h=Math.max(1,Math.round(ih*sc));const b=$('beforeImage'),a=$('afterImage');b.width=a.width=w;b.height=a.height=h;const ctx=b.getContext('2d',{willReadFrequently:true});ctx.drawImage(bitmap,0,0,w,h);state.preview=ctx.getImageData(0,0,w,h);$('imageDetails').textContent=`${formatNumber(iw)} × ${formatNumber(ih)} PX`}
+function drawPhotoBase(bitmap){const iw=bitmap.width||bitmap.naturalWidth,ih=bitmap.height||bitmap.naturalHeight;document.querySelector('.negative-body').style.setProperty('--frame-aspect',`${iw} / ${ih}`);const sc=Math.min(1,1120/Math.max(iw,ih));const w=Math.max(1,Math.round(iw*sc)),h=Math.max(1,Math.round(ih*sc));const b=$('beforeImage'),a=$('afterImage');b.width=a.width=w;b.height=a.height=h;const ctx=b.getContext('2d',{willReadFrequently:true});ctx.drawImage(bitmap,0,0,w,h);state.preview=ctx.getImageData(0,0,w,h);$('imageDetails').textContent=`${formatNumber(iw)} × ${formatNumber(ih)} PX`}
 function scan(){const d=state.preview.data;const n=d.length/4;const inc=Math.max(1,Math.floor(n/45000));let sum=0,sum2=0,sat=0,warm=0,green=0,shadows=0,highlights=0,num=0;const bins=new Map();for(let i=0;i<n;i+=inc){const q=i*4,r=d[q],g=d[q+1],b=d[q+2],br=.2126*r+.7152*g+.0722*b;sum+=br;sum2+=br*br;sat+=(Math.max(r,g,b)-Math.min(r,g,b))/Math.max(1,Math.max(r,g,b));warm+=r-b;green+=g-(r+b)/2;shadows+=br<40;highlights+=br>240;const key=[r,g,b].map(v=>Math.round(v/36)*36).map(v=>clamp(v,0,255));const code=key.join(',');bins.set(code,(bins.get(code)||0)+1);num++}
  const avg=sum/num,stdev=Math.sqrt(Math.max(0,sum2/num-avg*avg)),saturation=sat/num,color=warm/num,greens=green/num;
  let rec='portra-400',reason='Естественная палитра и мягкие полутона оставят кадр живым.';
@@ -273,6 +307,16 @@ async function exportImage(share=false){if(!state.bitmap){toast('Сначала 
  }catch(e){console.error(e);busy(false);toast('Не удалось сохранить: '+e.message)}finally{busy(false)}
 }
 function bind(){
+ const focusBtn=$('focusPhoto'),negative=document.querySelector('.negative');
+ const focus=(open)=>{
+   negative.classList.toggle('photo-focus',open);
+   document.body.classList.toggle('photo-focus-open',open);
+   focusBtn.setAttribute('aria-pressed',String(open));
+   focusBtn.setAttribute('aria-label',open?'Свернуть фотографию':'Развернуть фотографию');
+   $('focusPhotoLabel').textContent=open?'СВЕРНУТЬ':'ВО ВЕСЬ ЭКРАН';
+ };
+ focusBtn.onclick=()=>focus(!negative.classList.contains('photo-focus'));
+ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&negative.classList.contains('photo-focus')){focus(false);e.preventDefault()}});
  $('importButton').onclick=()=>$('photoInput').click();$('photoInput').onchange=e=>{const f=e.target.files?.[0];if(f)loadPhoto(f);e.target.value=''};$('exportButton').onclick=()=>sheetOpen('export');$('openContact').onclick=()=>{contactFilter='all';sheetOpen('contact')};$('openDevelop').onclick=()=>sheetOpen('develop');$('scanOpen').onclick=()=>sheetOpen('scan');$('scanMatch').onclick=()=>selectPreset(state.analysis?.recommended||'portra-400');$('favoriteCurrent').onclick=()=>toggleFav(state.preset);$('undoButton').onclick=undo;
  $('filmRail').onclick=e=>{const b=e.target.closest('[data-preset]');if(b)selectPreset(b.dataset.preset)};$('closeSheet').onclick=sheetClose;$('veil').onclick=e=>{if(e.target===$('veil'))sheetClose()};
  $('toggleCompare').onclick=()=>{state.comparePin=!state.comparePin;toggleOriginal();$('toggleCompare').setAttribute('aria-pressed',String(state.comparePin))};
