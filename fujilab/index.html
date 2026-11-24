@@ -98,24 +98,30 @@ body.photo-focus-open{overflow:hidden!important}
 .hardware-channel{display:flex;flex-direction:column;align-items:center;min-width:0;position:relative}
 .hardware-channel:not(:last-child):after{content:"";position:absolute;right:-4px;top:15px;bottom:8px;width:1px;background:linear-gradient(transparent,#888d8550,transparent)}
 .channel-overline{font:9px var(--mono);letter-spacing:.075em;color:#858d86;white-space:nowrap;margin-bottom:8px}
-.hardware-knob{--knob-angle:0deg;--arc-amount:0deg;position:relative;display:block;width:116px;height:116px;border-radius:50%;flex-shrink:0;touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none;outline-offset:4px;-webkit-tap-highlight-color:transparent}
+.hardware-knob{--knob-angle:0deg;--arc-amount:0deg;position:relative;display:block;width:116px;height:116px;border-radius:50%;flex-shrink:0;touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none;outline-offset:4px;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 10px 14px rgba(0,0,0,.28))}
+.hardware-knob:before{content:"";position:absolute;left:50%;top:-10px;bottom:-10px;width:34px;transform:translateX(-50%);border-radius:999px;background:linear-gradient(180deg,rgba(245,246,240,.18),rgba(19,22,20,.04) 18%,rgba(12,15,13,.34) 50%,rgba(247,247,240,.12) 82%,rgba(255,255,255,.22));box-shadow:inset 0 0 0 1px rgba(194,199,189,.16),inset 0 3px 4px rgba(255,255,255,.09),inset 0 -5px 6px rgba(0,0,0,.42);opacity:.72;pointer-events:none}
 .hardware-primary .hardware-knob{width:130px;height:130px}
-.hardware-knob .knob-ticks{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from -135deg,#c0c3b6 0deg 1deg,transparent 1deg 9deg);-webkit-mask:radial-gradient(circle,transparent 0 53%,black 54% 57%,transparent 58%);mask:radial-gradient(circle,transparent 0 53%,black 54% 57%,transparent 58%);opacity:.7}
-.hardware-knob .knob-casing{position:absolute;inset:12%;display:block;border-radius:50%;padding:9%;background:repeating-conic-gradient(from 3deg,#b7c0b8 0deg 2deg,#5a615d 2deg 4deg,#7b837e 4deg 6deg,#d6dcd1 6deg 7deg,#606862 7deg 10deg);box-shadow:0 5px 7px #0009,inset 0 1px 1px #f7fff8,0 0 0 1px #0e120f,0 0 0 4px #6d756d;transition:box-shadow .14s}
+.hardware-knob .knob-ticks{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from -135deg,#d8ddd4 0deg 1deg,transparent 1deg 8deg);-webkit-mask:radial-gradient(circle,transparent 0 51%,black 52% 58%,transparent 59%);mask:radial-gradient(circle,transparent 0 51%,black 52% 58%,transparent 59%);opacity:.82}
+.hardware-knob .knob-casing{position:absolute;inset:10%;display:block;border-radius:50%;padding:9%;background:repeating-conic-gradient(from 2deg,#d6ddd2 0deg 1deg,#7e8780 1deg 3deg,#c9d0c7 3deg 4deg,#59615d 4deg 6deg);box-shadow:0 9px 12px #000a,inset 0 2px 2px #fbfffb,inset 0 -3px 5px #0008,0 0 0 1px #0e120f,0 0 0 4px #69716c;transition:box-shadow .14s;overflow:visible}
+.hardware-knob .knob-casing:before,.hardware-knob .knob-casing:after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:16px;height:10px;background:linear-gradient(180deg,#f0f0eb,#788079);clip-path:polygon(50% 0,100% 100%,0 100%);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));opacity:.88}
+.hardware-knob .knob-casing:before{top:-9px}
+.hardware-knob .knob-casing:after{bottom:-9px;transform:translateX(-50%) rotate(180deg)}
 .hardware-primary .knob-casing{padding:8%}
-.hardware-knob .knob-rotor{position:relative;display:block;width:100%;height:100%;border-radius:50%;transform:rotate(var(--knob-angle));background:radial-gradient(circle at 35% 22%,#555e58 0%,#373d38 25%,#171b19 67%,#0e1110 100%);border:1px solid #777e77;box-shadow:inset 0 2px 3px #fff4,inset 0 -5px 6px #000c,0 2px 4px #0009;will-change:transform}
-.hardware-knob .knob-needle{position:absolute;left:50%;top:6%;transform:translateX(-50%);width:4px;height:19%;background:#f06f4e;border-radius:1px;box-shadow:0 0 8px #f06f4e90,0 1px 0 #ffe0c6}
-.hardware-knob .knob-inner{position:absolute;inset:26%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 25%,#353e38,#151b18 75%);border:1px solid #899188;box-shadow:inset 0 1px 2px #fff3,0 0 0 2px #0e120f}
+.hardware-knob .knob-rotor{position:relative;display:block;width:100%;height:100%;border-radius:50%;transform:rotate(var(--knob-angle));background:radial-gradient(circle at 32% 18%,#5f6862 0%,#414843 24%,#1d221f 62%,#0c0f0e 100%);border:1px solid #838a84;box-shadow:inset 0 3px 4px #fff4,inset 0 -8px 9px #000d,0 2px 6px #000a;will-change:transform}
+.hardware-knob .knob-rotor:before{content:"";position:absolute;inset:9%;border-radius:50%;border:1px solid rgba(232,235,225,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.hardware-knob .knob-needle{position:absolute;left:50%;top:5%;transform:translateX(-50%);width:5px;height:21%;background:linear-gradient(180deg,#ffd3c0,#e76d47 48%,#9e351d 100%);border-radius:0 0 3px 3px;box-shadow:0 0 10px #f06f4e85,0 1px 0 #fff0d6}
+.hardware-knob .knob-inner{position:absolute;inset:27%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 22%,#3d4540,#151a18 78%);border:1px solid #959d93;box-shadow:inset 0 1px 2px #fff3,0 0 0 2px #0c100e,0 10px 12px rgba(0,0,0,.26)}
+.hardware-knob .knob-inner:before{content:"";position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,.06)}
 .hardware-knob .knob-inner b{font:600 11px var(--mono);color:#dddcd0;letter-spacing:.06em;text-shadow:0 1px #000a}
 .hardware-primary .knob-inner b{font-size:13px}
-.hardware-knob.turning .knob-casing{box-shadow:0 3px 4px #000d,inset 0 1px #f7fff8,0 0 0 1px #0e120f,0 0 0 4px #949b8f}
-.hardware-knob.turning .knob-needle{background:#ffb18a}
+.hardware-knob.turning .knob-casing{box-shadow:0 5px 7px #000d,inset 0 2px #f7fff8,inset 0 -3px 5px #0009,0 0 0 1px #0e120f,0 0 0 4px #98a08f}
+.hardware-knob.turning .knob-needle{background:linear-gradient(180deg,#ffe0cd,#ff936c 48%,#ba4424 100%)}
 .channel-name{font:600 9px var(--sans);letter-spacing:.14em;color:#b6bdb3;margin-top:8px}
 .channel-number{display:flex;gap:4px;align-items:baseline;justify-content:center;font:500 24px/1.2 var(--mono);color:#f1e9db;letter-spacing:-.045em;margin-top:4px;white-space:nowrap}
 .hardware-primary .channel-number{font-size:27px;color:#e8cfbb}
 .channel-number small{font:10px var(--mono);color:#e58161;letter-spacing:.04em}
 .console-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 3px 6px;margin-top:12px;border-top:1px solid #8f978a30;font:9px var(--mono);letter-spacing:.06em;color:#808b82}
-.console-hint{white-space:nowrap;color:#b2b9ab}.hint-arrows{color:#e9805f;font-size:17px;vertical-align:middle;margin-right:4px}
+.console-hint{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#c3cbbe;padding:5px 9px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 0 rgba(0,0,0,.35)}.hint-arrows{color:#e9805f;font-size:17px;vertical-align:middle;margin-right:0}
 .console-fine{display:flex;align-items:center;gap:12px;margin-top:3px;font:9px var(--mono);letter-spacing:.07em;color:#8b9489}
 .console-fine label,.console-fine span{white-space:nowrap}.console-fine input{appearance:none;-webkit-appearance:none;min-width:0;flex:1;height:21px;background:transparent;accent-color:#e56c4d}
 .console-fine input::-webkit-slider-runnable-track{height:3px;background:linear-gradient(90deg,#d75a3e,#797f76);border:0;box-shadow:0 1px #000}
@@ -148,7 +154,7 @@ body.photo-focus-open{overflow:hidden!important}
  .active-stock{padding:12px 4px 8px}
  .reel-media{padding:8px 3px}.reel-media:before,.reel-media:after{height:4px}
 }
-@media(max-width:370px){.console-face{padding:11px 10px 9px}.hardware-knob{width:74px;height:74px}.hardware-primary .hardware-knob{width:88px;height:88px}.channel-overline{font-size:7px}.channel-name{font-size:7px}.channel-number{font-size:15px}.hardware-primary .channel-number{font-size:18px}.console-stamp{display:none}.console-footer{justify-content:center}.console-fine label{font-size:7px}}
+@media(max-width:370px){.console-face{padding:11px 10px 9px}.hardware-knob{width:74px;height:74px}.hardware-primary .hardware-knob{width:88px;height:88px}.channel-overline{font-size:7px}.channel-name{font-size:7px}.channel-number{font-size:15px}.hardware-primary .channel-number{font-size:18px}.console-stamp{display:none}.console-footer{justify-content:center;flex-wrap:wrap;gap:6px}.console-fine label{font-size:7px}}
 
 /* A real one-tap entry to the rotary deck, visible in the mobile action dock. */
 .action-short{display:none}
@@ -269,27 +275,27 @@ body.photo-focus-open{overflow:hidden!important}
     <div class="console-deck">
      <div class="hardware-channel">
       <div class="channel-overline">01 / LIGHT</div>
-      <div class="hardware-knob" id="exposureDial" data-knob="exposure" role="slider" tabindex="0" aria-label="Экспозиция" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" title="Тяни вверх-вниз или вращай">
+      <div class="hardware-knob" id="exposureDial" data-knob="exposure" role="slider" tabindex="0" aria-label="Экспозиция" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" title="Тяни вверх-вниз, как механическое колесо">
        <span class="knob-ticks"></span><span class="knob-casing"><span class="knob-rotor"><i class="knob-needle"></i><span class="knob-inner"><b>EV</b></span></span></span>
       </div>
       <div class="channel-name">СВЕТ</div><output id="exposureNumber" class="channel-number">+0.00 <small>EV</small></output>
      </div>
      <div class="hardware-channel hardware-primary">
       <div class="channel-overline">02 / EMULSION</div>
-      <div class="hardware-knob" id="intensityDial" data-knob="film" role="slider" tabindex="0" aria-label="Сила плёночного образа" aria-valuemin="0" aria-valuemax="100" aria-valuenow="85" title="Тяни вверх-вниз или вращай">
+      <div class="hardware-knob" id="intensityDial" data-knob="film" role="slider" tabindex="0" aria-label="Сила плёночного образа" aria-valuemin="0" aria-valuemax="100" aria-valuenow="85" title="Тяни вверх-вниз, как механическое колесо">
        <span class="knob-ticks"></span><span class="knob-casing"><span class="knob-rotor"><i class="knob-needle"></i><span class="knob-inner"><b>B/L</b></span></span></span>
       </div>
       <div class="channel-name">ПЛЁНКА</div><output class="channel-number"><span id="intensityNumber">85</span><small>%</small></output>
      </div>
      <div class="hardware-channel">
       <div class="channel-overline">03 / TEXTURE</div>
-      <div class="hardware-knob" id="grainDial" data-knob="grain" role="slider" tabindex="0" aria-label="Зерно" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="Тяни вверх-вниз или вращай">
+      <div class="hardware-knob" id="grainDial" data-knob="grain" role="slider" tabindex="0" aria-label="Зерно" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="Тяни вверх-вниз, как механическое колесо">
        <span class="knob-ticks"></span><span class="knob-casing"><span class="knob-rotor"><i class="knob-needle"></i><span class="knob-inner"><b>G</b></span></span></span>
       </div>
       <div class="channel-name">ЗЕРНО</div><output id="grainNumber" class="channel-number">00 <small>%</small></output>
      </div>
     </div>
-    <div class="console-footer"><div><span class="console-stamp">B/L  //  35MM  //  EMULSION 01</span></div><div class="console-hint"><span class="hint-arrows">↕</span> КРУТИ ПАЛЬЦЕМ</div></div>
+    <div class="console-footer"><div><span class="console-stamp">B/L  //  35MM  //  EMULSION 01</span></div><div class="console-hint"><span class="hint-arrows">↕</span> ВВЕРХ / ВНИЗ</div></div>
     <div class="console-fine"><label for="intensitySlider">FILM / FINE ADJUST</label><input id="intensitySlider" type="range" min="0" max="100" value="85" aria-label="Точная сила пресета"><span>0 / 100</span></div>
    </div>
   </section>
