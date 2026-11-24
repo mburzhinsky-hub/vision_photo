@@ -274,7 +274,7 @@ body.photo-focus-open{background:#111!important}.negative.photo-focus{background
     </div>
     <div class="perfs right" aria-hidden="true"></div>
    </div>
-   <div class="negative-bottom"><span>35MM / DIGITAL NEGATIVE</span><span id="imageDetails">01 / SAMPLE FRAME</span><button id="toggleCompare" class="stage-compare" aria-label="Показать оригинал"><span class="compare-arrows" aria-hidden="true">↔</span> COMPARE</button></div>
+   <div class="negative-bottom"><span>35MM / DIGITAL NEGATIVE</span><span id="imageDetails">01 / SAMPLE FRAME</span><button id="toggleCompare" class="stage-compare" aria-label="Удерживайте, чтобы показать оригинал"><span class="compare-arrows" aria-hidden="true">↔</span> COMPARE</button></div>
   </section>
   <section class="active-stock" aria-label="Выбранный образ"><div class="stock-caption"><div class="micro-kicker">LOADED STOCK <span class="stock-led"></span></div><div class="stock-heading"><h2 id="activePreset">PORTRA 400</h2><button id="favoriteCurrent" class="favorite-current" aria-label="Добавить в избранное"><svg><use href="#i-heart"/></svg></button></div><p id="activeDescription">Тёплая кожа, мягкие света, живая фактура.</p></div><div class="active-stock-actions"><button id="undoButton" aria-label="Отменить последнее изменение" title="Отменить"><svg><use href="#i-undo"/></svg></button><button id="openContact" class="text-link"><svg><use href="#i-grid"/></svg><span>ARCHIVE</span><b>↗</b></button></div></section>
   <section class="stock-shelf" aria-label="Выбор плёночного образа">
@@ -503,7 +503,22 @@ function undo(){if(!history.length)return;const h=history.pop();state.preset=h.p
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2600)}
 function busy(on,title='Проявляем кадр',hint='Локальная обработка · без сервера',prog=0){state.busy=on;$('busy').classList.toggle('show',on);$('busyTitle').textContent=title;$('busyHint').textContent=hint;$('busyProgress').style.width=prog+'%'}
 function strength(n,checkpointed=false){const next=clamp(Math.round(n),0,100);if(next===state.strength)return;if(checkpointed)checkpoint();state.strength=next;syncHardware();persist();queueRender()}
-function selectPreset(id,fromSheet=false){if(!PRESETS.some(p=>p.id===id))return;if(id!==state.preset)checkpoint();state.preset=id;state.recent=[id,...state.recent.filter(i=>i!==id)].slice(0,12);persist();syncActive(fromSheet);queueRender();if(fromSheet)toast('Загружена плёнка · '+current().name)}
+function selectPreset(id,fromSheet=false){
+ if(!PRESETS.some(p=>p.id===id))return;
+ const restoreStrength=state.strength===0;
+ if(id!==state.preset||restoreStrength)checkpoint();
+ // Selecting a new stock must reveal the developed photograph.
+ if(restoreStrength)state.strength=85;
+ state.comparePin=false;
+ state.compareHold=false;
+ $('imageHousing').classList.remove('is-before');
+ $('toggleCompare').setAttribute('aria-pressed','false');
+ state.preset=id;
+ state.recent=[id,...state.recent.filter(i=>i!==id)].slice(0,12);
+ persist();syncActive(fromSheet);queueRender();
+ if(restoreStrength)toast('Сила плёнки восстановлена до 85%');
+ else if(fromSheet)toast('Загружена плёнка · '+current().name);
+}
 function toggleFav(id){if(state.favorites.has(id))state.favorites.delete(id);else state.favorites.add(id);persist();syncActive();if($('contactGrid'))renderContactGrid(false)}
 function syncActive(reveal=false){const p=current();if(reveal&&!railMatches(p)){railCategory='all';syncRailTabs()}$('activePreset').textContent=p.name.toUpperCase();$('activeDescription').textContent=meta(p)[0];$('negativeIndex').textContent=String(PRESETS.indexOf(p)+1).padStart(3,'0');$('favoriteCurrent').classList.toggle('active',state.favorites.has(p.id));$('favoriteCurrent').setAttribute('aria-label',state.favorites.has(p.id)?'Убрать из избранного':'В избранное');$('undoButton').disabled=history.length===0;
   syncHardware();
@@ -673,7 +688,32 @@ function bind(){
   e.preventDefault();chooseRailCategory(buttons[next].dataset.railFilter,true);
  });
  $('filmRail').onclick=e=>{const b=e.target.closest('[data-preset]');if(b)selectPreset(b.dataset.preset)};$('closeSheet').onclick=sheetClose;$('veil').onclick=e=>{if(e.target===$('veil'))sheetClose()};
- $('toggleCompare').onclick=()=>{state.comparePin=!state.comparePin;toggleOriginal();$('toggleCompare').setAttribute('aria-pressed',String(state.comparePin))};
+ // Hold to compare, then release to return to the processed image.
+ const compareButton=$('toggleCompare');
+ let comparePointer=null;
+ compareButton.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='mouse'&&event.button!==0)return;
+  comparePointer=event.pointerId;
+  state.compareHold=true;state.comparePin=false;
+  compareButton.setPointerCapture?.(event.pointerId);
+  toggleOriginal();compareButton.setAttribute('aria-pressed','true');
+ });
+ const releaseCompare=event=>{
+  if(comparePointer!==null&&event?.pointerId!==undefined&&event.pointerId!==comparePointer)return;
+  comparePointer=null;state.compareHold=false;state.comparePin=false;
+  toggleOriginal();compareButton.setAttribute('aria-pressed','false');
+ };
+ for(const name of ['pointerup','pointercancel','lostpointercapture','pointerleave'])compareButton.addEventListener(name,releaseCompare);
+ compareButton.addEventListener('click',releaseCompare);
+ compareButton.addEventListener('keydown',event=>{
+  if(event.key===' '||event.key==='Enter'){
+   event.preventDefault();state.compareHold=true;state.comparePin=false;
+   toggleOriginal();compareButton.setAttribute('aria-pressed','true');
+  }
+ });
+ compareButton.addEventListener('keyup',event=>{
+  if(event.key===' '||event.key==='Enter'){event.preventDefault();releaseCompare()}
+ });
  const housing=$('imageHousing');housing.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;state.compareHold=true;toggleOriginal()});const release=()=>{state.compareHold=false;toggleOriginal()};housing.addEventListener('pointerup',release);housing.addEventListener('pointerleave',release);housing.addEventListener('pointercancel',release);housing.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();state.compareHold=true;toggleOriginal()}});housing.addEventListener('keyup',e=>{if(e.code==='Space')release()});housing.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();state.comparePin=!state.comparePin;toggleOriginal();$('toggleCompare').setAttribute('aria-pressed',String(state.comparePin))}});
  bindHardware();
  let faderCheckpointed=false;
